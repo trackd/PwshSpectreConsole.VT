@@ -2,20 +2,19 @@
 
 namespace PwshSpectreConsole
 {
-    public interface IVT
+    internal interface IVT
     {
         int Position { get; set; }
 #nullable enable
-        string? String { get; set; }
+        // string? String { get; set; }
     }
 
-    public class BaseVT : IVT
+    internal class BaseVT : IVT
     {
         public int Position { get; set; }
-#nullable enable
-        public string? String { get; set; }
+        // public string? String { get; set; }
     }
-    public class VtCode : BaseVT
+    internal class VtCode : BaseVT
     {
         public Color Color { get; set; }
         public bool IsForeground { get; set; }
@@ -28,7 +27,7 @@ namespace PwshSpectreConsole
             IsForeground = true;
         }
     }
-    public class Deco : BaseVT
+    internal class Deco : BaseVT
     {
         public Decoration Decoration { get; set; }
         public Deco()

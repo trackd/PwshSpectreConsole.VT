@@ -1,38 +1,37 @@
 ﻿using System;
 using System.Collections.Generic;
 using Spectre.Console;
-using System.Linq;
 
 namespace PwshSpectreConsole
 {
     internal class Parser
     {
-        private static (string slice, string nonVtText, int placement) GetNextSlice(ref ReadOnlySpan<char> inputSpan)
-        {
-            var escIndex = inputSpan.IndexOf('\x1B');
-            if (escIndex == -1)
-            {
-                return (null, inputSpan.ToString(), 0);
-            }
-            // Skip the '[' character after ESC
-            var sliceStart = escIndex + 2;
-            if (sliceStart >= inputSpan.Length)
-            {
-                return (null, inputSpan.ToString(), 0);
-            }
-            var slice = inputSpan.Slice(sliceStart);
-            var endIndex = slice.IndexOf('m');
-            if (endIndex == -1)
-            {
-                return (null, inputSpan.ToString(), 0);
-            }
-            var vtCode = slice.Slice(0, endIndex).ToString();
-            var nonVtText = inputSpan.Slice(0, escIndex).ToString();
-            var placement = sliceStart + endIndex - vtCode.Length;
-            inputSpan = inputSpan.Slice(placement);
-            return (vtCode, nonVtText, placement);
-        }
-        private static (string slice, int placement) OldGetNextSlice(ref ReadOnlySpan<char> inputSpan)
+        // private static (string slice, string nonVtText, int placement) GetNextSliceTest(ref ReadOnlySpan<char> inputSpan)
+        // {
+        //     var escIndex = inputSpan.IndexOf('\x1B');
+        //     if (escIndex == -1)
+        //     {
+        //         return (null, inputSpan.ToString(), 0);
+        //     }
+        //     // Skip the '[' character after ESC
+        //     var sliceStart = escIndex + 2;
+        //     if (sliceStart >= inputSpan.Length)
+        //     {
+        //         return (null, inputSpan.ToString(), 0);
+        //     }
+        //     var slice = inputSpan.Slice(sliceStart);
+        //     var endIndex = slice.IndexOf('m');
+        //     if (endIndex == -1)
+        //     {
+        //         return (null, inputSpan.ToString(), 0);
+        //     }
+        //     var vtCode = slice.Slice(0, endIndex).ToString();
+        //     var nonVtText = inputSpan.Slice(0, escIndex).ToString();
+        //     var placement = sliceStart + endIndex - vtCode.Length;
+        //     inputSpan = inputSpan.Slice(placement);
+        //     return (vtCode, nonVtText, placement);
+        // }
+        private static (string slice, int placement) GetNextSlice(ref ReadOnlySpan<char> inputSpan)
         {
             var escIndex = inputSpan.IndexOf('\x1B');
             if (escIndex == -1)
@@ -148,13 +147,19 @@ namespace PwshSpectreConsole
 
             while (!inputSpan.IsEmpty)
             {
-                // var (slice, placement) = GetNextSlice(inputSpan: ref inputSpan);
-                var (slice, nonVtText, placement) = GetNextSlice(ref inputSpan);
+                var (slice, placement) = GetNextSlice(inputSpan: ref inputSpan);
+                // var (slice, nonVtText, placement) = GetNextSliceTest(ref inputSpan);
                 if (slice == null)
                 {
                     break;
                 }
-                byte[] codeParts = slice.Split(';').Select(byte.Parse).ToArray();
+                string[] stringParts = slice.Split(';');
+                byte[] codeParts = new byte[stringParts.Length];
+
+                for (int i = 0; i < stringParts.Length; i++)
+                {
+                    codeParts[i] = byte.Parse(stringParts[i]);
+                }
                 if (codeParts.Length > 0)
                 {
                     try
@@ -163,7 +168,8 @@ namespace PwshSpectreConsole
                         IVT _vtCode = NewVT(firstCode, codeParts, placement);
                         if (_vtCode != null)
                         {
-                            _vtCode.String = nonVtText;
+                            // for GetNextSliceTest to try and extract Strings
+                            // _vtCode.String = nonVtText;
                             results.Add(_vtCode);
                         }
                     }

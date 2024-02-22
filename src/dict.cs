@@ -2,9 +2,9 @@
 using Spectre.Console;
 namespace PwshSpectreConsole
 {
-    public static class DecorationDictionary
+    internal static class DecorationDictionary
     {
-        public static bool TryGetValue(int key, out Decoration value)
+        internal static bool TryGetValue(int key, out Decoration value)
         {
             if (DecorationDict.TryGetValue(key, out Decoration str))
             {
@@ -28,9 +28,9 @@ namespace PwshSpectreConsole
             { 9, Decoration.Strikethrough }
         };
     }
-    public static class ConsoleColorLookup
+    internal static class ConsoleColorLookup
     {
-        public static bool TryGetValue(int key, out string value)
+        internal static bool TryGetValue(int key, out string value)
         {
             if (ConsoleColorDict.TryGetValue(key, out string str))
             {

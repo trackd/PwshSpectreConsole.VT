@@ -17,7 +17,7 @@ namespace PwshSpectreConsole
     }
     public class VTConversion
     {
-        public static Markup ToMarkUp(string input)
+        public static object ToMarkUp(string input, bool AsString = false)
         {
             string[] segment = Regex.Split(input, "(?=\x1b)");
             StringBuilder sb = new StringBuilder();
@@ -87,9 +87,40 @@ namespace PwshSpectreConsole
                     sb.Append($"[{fgColor.ToMarkup()} on {bgColor.ToMarkup()}]{(string)ht["String"]}[/]");
                 }
             }
+            if (AsString)
+            {
+                return sb.ToString();
+            }
             return new Markup(sb.ToString());
         }
-
+        internal static object Map(List<IVT> input)
+        {
+            Hashtable ht = new Hashtable
+                {
+                    { "fg", Color.Default },
+                    { "bg", Color.Default },
+                    { "decoration", Decoration.None },
+                };
+            foreach (IVT item in input)
+            {
+                switch (item)
+                {
+                    case VtCode vt:
+                        if (vt.IsForeground)
+                        {
+                            ht["fg"] = vt.Color;
+                        }
+                        else
+                        {
+                            ht["bg"] = vt.Color;
+                        }
+                        break;
+                    case Deco deco:
+                        ht["decoration"] = deco.Decoration;
+                        break;
+                }
+            }
+            return ht;
+        }
     }
-
 }
