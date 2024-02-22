@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <AssemblyName>PwshSpectreConsole</AssemblyName>
+        <TargetFrameworks>net7.0</TargetFrameworks>
+        <!-- <Nullable>enable</Nullable> -->
+        </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Spectre.Console" Version="0.48.0" />
+        <!-- <PackageReference Include="System.Management.Automation" Version="7.3.0" PrivateAssets="all" /> -->
+        <PackageReference Include="System.Management.Automation" Version="7.3.0" PrivateAssets="all" />
+    </ItemGroup>
+</Project>
