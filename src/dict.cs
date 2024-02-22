@@ -43,7 +43,7 @@ namespace PwshSpectreConsole
         internal static Dictionary<int, string> ConsoleColorDict { get; } = new Dictionary<int, string>()
         {
             // ideally this would be a Color type dictionary but Spectre doesnt have all the ConsoleColor names.
-            { 30, "black" },
+            { 30, "Black" },
             { 31, "DarkRed" },
             { 32, "DarkGreen" },
             { 33, "DarkYellow" },

@@ -6,31 +6,6 @@ namespace PwshSpectreConsole
 {
     internal class Parser
     {
-        // private static (string slice, string nonVtText, int placement) GetNextSliceTest(ref ReadOnlySpan<char> inputSpan)
-        // {
-        //     var escIndex = inputSpan.IndexOf('\x1B');
-        //     if (escIndex == -1)
-        //     {
-        //         return (null, inputSpan.ToString(), 0);
-        //     }
-        //     // Skip the '[' character after ESC
-        //     var sliceStart = escIndex + 2;
-        //     if (sliceStart >= inputSpan.Length)
-        //     {
-        //         return (null, inputSpan.ToString(), 0);
-        //     }
-        //     var slice = inputSpan.Slice(sliceStart);
-        //     var endIndex = slice.IndexOf('m');
-        //     if (endIndex == -1)
-        //     {
-        //         return (null, inputSpan.ToString(), 0);
-        //     }
-        //     var vtCode = slice.Slice(0, endIndex).ToString();
-        //     var nonVtText = inputSpan.Slice(0, escIndex).ToString();
-        //     var placement = sliceStart + endIndex - vtCode.Length;
-        //     inputSpan = inputSpan.Slice(placement);
-        //     return (vtCode, nonVtText, placement);
-        // }
         private static (string slice, int placement) GetNextSlice(ref ReadOnlySpan<char> inputSpan)
         {
             var escIndex = inputSpan.IndexOf('\x1B');
@@ -148,7 +123,6 @@ namespace PwshSpectreConsole
             while (!inputSpan.IsEmpty)
             {
                 var (slice, placement) = GetNextSlice(inputSpan: ref inputSpan);
-                // var (slice, nonVtText, placement) = GetNextSliceTest(ref inputSpan);
                 if (slice == null)
                 {
                     break;
@@ -168,8 +142,6 @@ namespace PwshSpectreConsole
                         IVT _vtCode = NewVT(firstCode, codeParts, placement);
                         if (_vtCode != null)
                         {
-                            // for GetNextSliceTest to try and extract Strings
-                            // _vtCode.String = nonVtText;
                             results.Add(_vtCode);
                         }
                     }

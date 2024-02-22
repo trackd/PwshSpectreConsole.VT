@@ -1,12 +1,18 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Management.Automation;
 using Spectre.Console;
+using Spectre.Console.Rendering;
 
 namespace PwshSpectreConsole
 {
     [Cmdlet(VerbsData.ConvertTo, "SpectreDecoration")]
-    [Alias("ToDeco")]
+    /// <summary>
+    /// Converts a VT decorated string to Spectre.Colors
+    /// does not support multi-colored strings,
+    /// in order to be able to use Spectre.Console.Text
+    /// </summary>
     public sealed class ConvertToSpectreDecorationCmdlet : PSCmdlet
     {
         [Parameter(Mandatory = true, Position = 0, ValueFromPipeline = true)]
@@ -24,11 +30,11 @@ namespace PwshSpectreConsole
             List<IVT> lookup = Parser.Parse(String);
             if (Raw)
             {
-                WriteObject(lookup);
+                WriteObject(lookup, enumerateCollection: true);
                 return;
             }
-            Hashtable ht = (Hashtable)VTConversion.Map(lookup);
-            ht["String"] = Clean.ToStripVT(String);
+            Hashtable ht = (Hashtable)Transform.Map(lookup);
+            ht["String"] = Transform.ToCleanString(String);
             foreach (var key in MyInvocation.BoundParameters.Keys)
             {
                 switch (key)
@@ -49,7 +55,10 @@ namespace PwshSpectreConsole
         }
     }
     [Cmdlet(VerbsData.ConvertTo, "SpectreMarkUp")]
-    [Alias("ToMark")]
+    ///<summary>
+    /// converts a VT decorated string to Spectre Console
+    /// default outputs a spectre markdown object
+    ///
     public sealed class ConvertToSpectreMarkUpCmdlet : PSCmdlet
     {
         [Parameter(Mandatory = true, Position = 0, ValueFromPipeline = true)]
@@ -60,12 +69,32 @@ namespace PwshSpectreConsole
         {
             if (AsString)
             {
-                WriteObject(VTConversion.ToMarkUp(String, true));
+                WriteObject(Transform.ToMarkUp(String, true));
+                return;
             }
-            else
+            WriteObject(Transform.ToMarkUp(String));
+        }
+    }
+    [Cmdlet(VerbsCommunications.Write, "SpectreRender")]
+    /// <summary>
+    /// writes a renderable object to the pipeline
+    /// <summary>
+    public sealed class RenderSpectre : PSCmdlet
+    {
+        [Parameter(Position = 0, ValueFromPipeline = true)]
+        public Renderable Renderable { get; set; }
+
+        [Parameter()]
+        public String String { get; set; }
+        protected override void ProcessRecord()
+        {
+            if (null != String)
             {
-                WriteObject(VTConversion.ToMarkUp(String));
+                WriteObject(Transform.Render(new Markup(String)));
+                return;
             }
+            WriteObject(Transform.Render(Renderable));
+            return;
         }
     }
 }
