@@ -4,7 +4,7 @@ using Spectre.Console;
 
 namespace PwshSpectreConsole
 {
-    internal class Parser
+    internal class Decoder
     {
         private static (string slice, int placement) GetNextSlice(ref ReadOnlySpan<char> inputSpan)
         {

@@ -27,7 +27,7 @@ namespace PwshSpectreConsole
 
         protected override void ProcessRecord()
         {
-            List<IVT> lookup = Parser.Parse(String);
+            List<IVT> lookup = Decoder.Parse(String);
             if (Raw)
             {
                 WriteObject(lookup, enumerateCollection: true);
@@ -35,23 +35,21 @@ namespace PwshSpectreConsole
             }
             Hashtable ht = (Hashtable)Transform.Map(lookup);
             ht["String"] = Transform.ToCleanString(String);
-            foreach (var key in MyInvocation.BoundParameters.Keys)
+
+            if (AsHashtable)
             {
-                switch (key)
-                {
-                    case "AsHashtable":
-                        WriteObject(ht);
-                        return;
-                    case "ToMarkup":
-                        Markup _markup = new Markup((string)ht["String"], new Style((Color?)ht["fg"], (Color?)ht["bg"], (Decoration?)ht["decoration"]));
-                        WriteObject(_markup);
-                        return;
-                    default:
-                        Text _text = new Text((string)ht["String"], new Style((Color?)ht["fg"], (Color?)ht["bg"], (Decoration?)ht["decoration"]));
-                        WriteObject(_text);
-                        return;
-                }
+                WriteObject(ht);
+                return;
             }
+            if (ToMarkUp)
+            {
+                Markup _markup = new Markup((string)ht["String"], new Style((Color?)ht["fg"], (Color?)ht["bg"], (Decoration?)ht["decoration"]));
+                WriteObject(_markup);
+                return;
+            }
+            Text _text = new Text((string)ht["String"], new Style((Color?)ht["fg"], (Color?)ht["bg"], (Decoration?)ht["decoration"]));
+            WriteObject(_text);
+            return;
         }
     }
     [Cmdlet(VerbsData.ConvertTo, "SpectreMarkUp")]

@@ -70,7 +70,7 @@ namespace PwshSpectreConsole
                 {
                     continue;
                 }
-                List<IVT> lookup = Parser.Parse(str);
+                List<IVT> lookup = Decoder.Parse(str);
                 Hashtable ht = (Hashtable)Map(lookup);
                 ht.Add("String", Transform.ToCleanString(str));
 
