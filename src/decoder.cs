@@ -8,7 +8,7 @@ namespace PwshSpectreConsole
     {
         private static (string slice, int placement) GetNextSlice(ref ReadOnlySpan<char> inputSpan)
         {
-            var escIndex = inputSpan.IndexOf('\x1B');
+            var escIndex = inputSpan.IndexOf('\u001b');
             if (escIndex == -1)
             {
                 return (null, 0);
@@ -26,7 +26,7 @@ namespace PwshSpectreConsole
                 return (null, 0);
             }
             var vtCode = slice.Slice(0, endIndex).ToString();
-            var placement = sliceStart + endIndex - vtCode.Length;
+            int placement = sliceStart + endIndex - vtCode.Length;
             inputSpan = inputSpan.Slice(placement);
             return (vtCode, placement);
         }
@@ -132,8 +132,12 @@ namespace PwshSpectreConsole
 
                 for (int i = 0; i < stringParts.Length; i++)
                 {
-                    codeParts[i] = byte.Parse(stringParts[i]);
+                    if (!byte.TryParse(stringParts[i], out codeParts[i]))
+                    {
+                        // Handle the failure
+                    }
                 }
+
                 if (codeParts.Length > 0)
                 {
                     try
@@ -145,9 +149,11 @@ namespace PwshSpectreConsole
                             results.Add(_vtCode);
                         }
                     }
-                    catch (FormatException)
+                    catch (FormatException ex)
                     {
                         // Ignore
+                        Console.WriteLine($"Failed to map IVT object: {ex.Message}");
+                        throw;
                     }
                 }
             }

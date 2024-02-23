@@ -22,6 +22,14 @@ namespace PwshSpectreConsole
             Type = "Default";
             IsForeground = true;
         }
+        public override string ToString()
+        {
+            if (IsForeground)
+            {
+                return $"RGB({Color.R},{Color.G},{Color.B}) Foreground";
+            }
+            return $"RGB({Color.R},{Color.G},{Color.B}) Background";
+        }
     }
     public class Deco : BaseVT
     {
@@ -29,6 +37,10 @@ namespace PwshSpectreConsole
         public Deco()
         {
             Decoration = Decoration.None;
+        }
+        public override string ToString()
+        {
+            return $"Decoration({Decoration})";
         }
     }
 

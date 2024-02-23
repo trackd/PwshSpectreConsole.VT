@@ -27,29 +27,38 @@ namespace PwshSpectreConsole
 
         protected override void ProcessRecord()
         {
-            List<IVT> lookup = Decoder.Parse(String);
-            if (Raw)
+            try
             {
-                WriteObject(lookup, enumerateCollection: true);
-                return;
-            }
-            Hashtable ht = (Hashtable)Transform.Map(lookup);
-            ht["String"] = Transform.ToCleanString(String);
+                List<IVT> lookup = Decoder.Parse(String);
+                if (Raw)
+                {
+                    WriteObject(lookup, enumerateCollection: true);
+                    return;
+                }
+                Hashtable ht = (Hashtable)Transform.Map(lookup);
 
-            if (AsHashtable)
-            {
-                WriteObject(ht);
+                ht["String"] = Transform.RegexString(String, true);
+
+                if (AsHashtable)
+                {
+                    WriteObject(ht);
+                    return;
+                }
+                if (ToMarkUp)
+                {
+                    Markup _markup = new Markup((string)ht["String"], new Style((Color?)ht["fg"], (Color?)ht["bg"], (Decoration?)ht["decoration"]));
+                    WriteObject(_markup);
+                    return;
+                }
+                Text _text = new Text((string)ht["String"], new Style((Color?)ht["fg"], (Color?)ht["bg"], (Decoration?)ht["decoration"]));
+                WriteObject(_text);
                 return;
             }
-            if (ToMarkUp)
+            catch (Exception ex)
             {
-                Markup _markup = new Markup((string)ht["String"], new Style((Color?)ht["fg"], (Color?)ht["bg"], (Decoration?)ht["decoration"]));
-                WriteObject(_markup);
-                return;
+                Console.WriteLine(ex.Message);
+                WriteObject(ex);
             }
-            Text _text = new Text((string)ht["String"], new Style((Color?)ht["fg"], (Color?)ht["bg"], (Decoration?)ht["decoration"]));
-            WriteObject(_text);
-            return;
         }
     }
     [Cmdlet(VerbsData.ConvertTo, "SpectreMarkUp")]

@@ -7,14 +7,59 @@ using System.IO;
 using Spectre.Console;
 using Spectre.Console.Rendering;
 
+
 namespace PwshSpectreConsole
 {
-    public partial class Transform
+    public abstract class Transform
     {
+        /// <summary>
+        ///  https://github.com/dotnet/csharplang/issues/7400
+        ///  https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/strings/
+        /// </summary>
+        private const string VT = @"(\u001b\[\d*(;\d+)*m)";
+        private const string CSI = @"(\u001b\[\?\d+[hl])";
+        private const string Link = @"(\u001b\]8;;.*?\u001b\\)";
+        private const string ResetVT = "\u001b[0m";
+        internal static readonly Regex VTRegex = new Regex($"{VT}", RegexOptions.Compiled);
+        internal static readonly Regex Escapes = new Regex($"{VT}|{CSI}|{Link}", RegexOptions.Compiled);
+        public class VtObject
+        {
+            public int CleanIndex { get; set; }
+            public int Length { get; set; }
+            public string Text { get; set; }
+            public List<IVT> EscapeSequence { get; set; }
+
+        }
+        public class TextFragment
+        {
+            public int Index { get; set; }
+            public int CleanIndex { get; set; }
+            public int Length { get; set; }
+            public string Text { get; set; }
+            public string EscapeSequence { get; set; }
+            public string Original { get; set; }
+        }
+#nullable enable
+        private static string? Cleanstring;
+
+        public static string RegexString(string text, bool complete = false)
+        {
+            if (complete)
+            {
+                Cleanstring ??= Escapes.Replace(text, string.Empty);
+                return Cleanstring;
+            }
+            Cleanstring ??= VTRegex.Replace(text, string.Empty);
+            return Cleanstring;
+
+        }
+#nullable disable
         public static string ToCleanString(string text)
         {
             // 7.3+
             return PSHostUserInterface.GetOutputString(text, false);
+            // 7.2
+            // return PSHostUserInterface.GetOutputString(text, false, false);
         }
         internal static object Map(List<IVT> input)
         {
@@ -45,6 +90,50 @@ namespace PwshSpectreConsole
             }
             return ht;
         }
+        public static List<TextFragment> GetTextFragments(string text)
+        {
+            string[] substrings = Escapes.Split(text);
+            List<TextFragment> textFragments = new List<TextFragment>();
+            int currentIndex = 0;
+            int cleanIndex = 0;
+            StringBuilder currentEscapeSequence = new StringBuilder();
+            for (int i = 0; i < substrings.Length; i++)
+            {
+                string substring = substrings[i];
+                if (Escapes.IsMatch(substring))
+                {
+                    currentEscapeSequence.Append(substring);
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(substring))
+                    {
+                        TextFragment textFragment = new TextFragment
+                        {
+                            Index = currentIndex,
+                            CleanIndex = cleanIndex,
+                            Length = substring.Length,
+                            Text = substring,
+                            EscapeSequence = currentEscapeSequence.ToString(),
+                            Original = currentEscapeSequence.ToString() + substring + ResetVT
+                        };
+
+                        textFragments.Add(textFragment);
+
+                        cleanIndex += substring.Length;
+                        currentEscapeSequence.Clear();
+                    }
+
+                    // if (!string.IsNullOrEmpty(substring))
+                    // {
+                    //     currentEscapeSequence.Clear();
+                    // }
+                }
+
+                currentIndex += substring.Length;
+            }
+            return textFragments;
+        }
         public static string Render(Renderable renderableObject)
         {
             using (var writer = new StringWriter())
@@ -56,11 +145,9 @@ namespace PwshSpectreConsole
                 return writer.ToString();
             }
         }
-        // [GeneratedRegex("(?=\u001b)")]
-        // private static partial Regex GenRegex();
         public static object ToMarkUp(string input, bool AsString = false)
         {
-            string[] segments = Regex.Split(input, "(?=\x1b)");
+            string[] segments = Regex.Split(input, "(?=\u001b)");
             // string[] segment = GenRegex().Split(input, "(?=\x1b)");
             StringBuilder sb = new();
             Hashtable _previous = new();
@@ -83,7 +170,6 @@ namespace PwshSpectreConsole
                 {
                     ht["fg"] = _previous["fg"];
                     _previous["fg"] = null;
-                    // _previous.Clear();
                 }
                 if ((Color)ht["bg"] == Color.Default && _previous["bg"] != null)
                 {
@@ -93,7 +179,7 @@ namespace PwshSpectreConsole
                 if ((Decoration)ht["decoration"] == Decoration.None && _previous["decoration"] != null)
                 {
                     ht["decoration"] = _previous["decoration"];
-                    // _previous["decoration"] = null;
+                    _previous["decoration"] = null;
                 }
                 Color fgColor = (Color)ht["fg"];
                 Color bgColor = (Color)ht["bg"];
@@ -113,5 +199,38 @@ namespace PwshSpectreConsole
             }
             return new Markup(sb.ToString());
         }
+        public static List<VtObject> MultiVT(string text)
+        {
+            string[] substrings = Escapes.Split(text);
+            List<VtObject> vtObjects = new List<VtObject>();
+            int cleanIndex = 0;
+            StringBuilder currentEscapeSequence = new StringBuilder();
+            for (int i = 0; i < substrings.Length; i++)
+            {
+                string substring = substrings[i];
+                if (Escapes.IsMatch(substring))
+                {
+                    currentEscapeSequence.Append(substring);
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(substring))
+                    {
+                        VtObject textFragment = new VtObject
+                        {
+                            CleanIndex = cleanIndex,
+                            Length = substring.Length,
+                            Text = substring,
+                            EscapeSequence = Decoder.Parse(currentEscapeSequence.ToString()),
+                        };
+                        vtObjects.Add(textFragment);
+                        cleanIndex += substring.Length;
+                        currentEscapeSequence.Clear();
+                    }
+                }
+            }
+            return vtObjects;
+        }
     }
+
 }
