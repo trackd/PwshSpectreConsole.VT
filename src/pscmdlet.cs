@@ -61,6 +61,7 @@ namespace PwshSpectreConsole
             }
         }
     }
+    // broken
     // [Cmdlet(VerbsData.ConvertTo, "SpectreMarkUp")]
     // ///<summary>
     // /// converts a VT decorated string to Spectre Console
@@ -127,11 +128,12 @@ namespace PwshSpectreConsole
         {
             if (AsString)
             {
+                // returns a string
                 var _string = Transform.FromVTToSpectre(String, true);
                 WriteObject(_string);
                 return;
             }
-            // for VT decorated strings
+            // returns a markup object, use Write-SpectreRender to render
             var _markup = Transform.FromVTToSpectre(String);
             WriteObject(_markup);
             return;

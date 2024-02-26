@@ -29,19 +29,6 @@ $sb = {
             }
         } | Format-SpectreTable -Border Markdown
     }
-    # function TestMarkup {
-    #     param(
-    #         $string
-    #     )
-    #     $obj = ConvertTo-SpectreMarkUp -String $string
-    #     $AsString = ConvertTo-SpectreMarkUp -String $string -AsString
-    #     [PSCustomObject]@{
-    #         Render   = Write-SpectreRender $obj
-    #         AsString = $AsString
-    #         Escaped  = $string | EscapeAnsi
-    #     }
-    #     $AsString = $obj = $string = $null
-    # }
     function TestMarkup {
         param($string)
             # $foo = [PwshSpectreConsole.Transform]::fromVTToSpectre($string)

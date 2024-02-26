@@ -1,8 +1,7 @@
 param(
     $Type = 'Publish'
 )
-$old = Get-Location
-Set-Location $PSScriptRoot
+Push-Location $PSScriptRoot
 Remove-Item '..\PwshSpectreConsole\PwshSpectreConsole\packages\PwshSpectreConsole\PwshSpectreConsole.dll' -Force -ErrorAction Ignore
 dotnet clean
 
@@ -15,4 +14,4 @@ else {
     Copy-Item '.\bin\Release\net7.0\PwshSpectreConsole.dll' '..\PwshSpectreConsole\PwshSpectreConsole\packages\PwshSpectreConsole' -Force
 }
 
-Set-Location $old
+Pop-Location

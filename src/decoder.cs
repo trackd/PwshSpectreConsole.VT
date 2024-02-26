@@ -33,18 +33,10 @@ namespace PwshSpectreConsole
         private static VtCode New4BitVT(int firstCode, int _position)
         {
             Color color = new Color();
-            if (firstCode > 0 && firstCode < 15)
+            if (ConsoleColorDict.TryGetValue(firstCode, out Color _color))
             {
-                color = Color.FromConsoleColor((ConsoleColor)firstCode);
+                color = _color;
             }
-            else
-            {
-                if (ConsoleColorLookup.TryGetValue(firstCode, out string consoleColor) && Enum.TryParse(consoleColor, out ConsoleColor parsedColor))
-                {
-                    color = Color.FromConsoleColor(parsedColor);
-                }
-            }
-
             return new VtCode
             {
                 Color = color,
@@ -88,7 +80,7 @@ namespace PwshSpectreConsole
             }
             else
             {
-                return null;  // Or however you want to handle the case where the decoration number is not found
+                return null;
             }
         }
         private static IVT NewVT(int firstCode, byte[] codeParts, int _position)
@@ -134,7 +126,7 @@ namespace PwshSpectreConsole
                 {
                     if (!byte.TryParse(stringParts[i], out codeParts[i]))
                     {
-                        // Handle the failure
+                        // ignore failure
                     }
                 }
 

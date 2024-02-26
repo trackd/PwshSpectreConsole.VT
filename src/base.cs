@@ -30,10 +30,10 @@ namespace PwshSpectreConsole
     public class Deco : BaseVT
     {
         public Decoration Decoration { get; set; }
-        public Deco()
-        {
-            Decoration = Decoration.None;
-        }
+        // public Deco()
+        // {
+        //     Decoration = Decoration.None;
+        // }
         public override string ToString()
         {
             return $"Decoration({Decoration})";
