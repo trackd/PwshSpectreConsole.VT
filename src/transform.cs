@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Management.Automation.Host;
+// using System.Management.Automation.Host;
 using System.IO;
 using Spectre.Console;
 using Spectre.Console.Rendering;
@@ -24,10 +24,11 @@ namespace PwshSpectreConsole
         internal static readonly Regex Escapes = new Regex($"{VT}|{CSI}|{Link}", RegexOptions.Compiled);
         public class VtObject
         {
-            public int CleanIndex { get; set; }
+            public int Index { get; set; }
             public int Length { get; set; }
             public string Text { get; set; }
             public List<IVT> EscapeSequence { get; set; }
+            public Hashtable Mapped { get; set; }
 
         }
         public class TextFragment
@@ -40,35 +41,29 @@ namespace PwshSpectreConsole
             public string Original { get; set; }
         }
 #nullable enable
-        private static string? Cleanstring;
-
-        public static string RegexString(string text, bool complete = false)
+        public static string ToCleanString(string text, bool complete = false)
         {
+            string? Cleanstring;
             if (complete)
             {
-                Cleanstring ??= Escapes.Replace(text, string.Empty);
-                return Cleanstring;
+                Cleanstring = Escapes.Replace(text, string.Empty);
             }
-            Cleanstring ??= VTRegex.Replace(text, string.Empty);
+            else
+            {
+                Cleanstring = VTRegex.Replace(text, string.Empty);
+            }
             return Cleanstring;
-
         }
 #nullable disable
-        public static string ToCleanString(string text)
+        internal static Hashtable Map(List<IVT> input)
         {
-            // 7.3+
-            return PSHostUserInterface.GetOutputString(text, false);
-            // 7.2
-            // return PSHostUserInterface.GetOutputString(text, false, false);
-        }
-        internal static object Map(List<IVT> input)
-        {
+            StringBuilder sb = new StringBuilder();
             Hashtable ht = new Hashtable
-                {
-                    { "fg", Color.Default },
-                    { "bg", Color.Default },
-                    { "decoration", Decoration.None },
-                };
+            {
+                { "fg", Color.Default },
+                { "bg", Color.Default },
+                { "decoration", Decoration.None },
+            };
             foreach (IVT item in input)
             {
                 switch (item)
@@ -123,13 +118,7 @@ namespace PwshSpectreConsole
                         cleanIndex += substring.Length;
                         currentEscapeSequence.Clear();
                     }
-
-                    // if (!string.IsNullOrEmpty(substring))
-                    // {
-                    //     currentEscapeSequence.Clear();
-                    // }
                 }
-
                 currentIndex += substring.Length;
             }
             return textFragments;
@@ -145,60 +134,59 @@ namespace PwshSpectreConsole
                 return writer.ToString();
             }
         }
-        public static object ToMarkUp(string input, bool AsString = false)
-        {
-            string[] segments = Regex.Split(input, "(?=\u001b)");
-            // string[] segment = GenRegex().Split(input, "(?=\x1b)");
-            StringBuilder sb = new();
-            Hashtable _previous = new();
-            foreach (string str in segments)
-            {
-                if (string.IsNullOrEmpty(str))
-                {
-                    continue;
-                }
-                List<IVT> lookup = Decoder.Parse(str);
-                Hashtable ht = (Hashtable)Map(lookup);
-                ht.Add("String", Transform.ToCleanString(str));
+        // public static object ToMarkUp(string input, bool AsString = false)
+        // {
+        //     string[] segments = Regex.Split(input, "(?=\u001b)");
+        //     StringBuilder sb = new();
+        //     Hashtable _previous = new();
+        //     foreach (string str in segments)
+        //     {
+        //         if (string.IsNullOrEmpty(str))
+        //         {
+        //             continue;
+        //         }
+        //         List<IVT> lookup = Decoder.Parse(str);
+        //         Hashtable ht = (Hashtable)Map(lookup);
+        //         ht.Add("String", Transform.ToCleanString(str, true));
 
-                if (string.IsNullOrEmpty((string)ht["String"]))
-                {
-                    _previous = ht;
-                    continue;
-                }
-                if ((Color)ht["fg"] == Color.Default && _previous["fg"] != null)
-                {
-                    ht["fg"] = _previous["fg"];
-                    _previous["fg"] = null;
-                }
-                if ((Color)ht["bg"] == Color.Default && _previous["bg"] != null)
-                {
-                    ht["bg"] = _previous["bg"];
-                    _previous["bg"] = null;
-                }
-                if ((Decoration)ht["decoration"] == Decoration.None && _previous["decoration"] != null)
-                {
-                    ht["decoration"] = _previous["decoration"];
-                    _previous["decoration"] = null;
-                }
-                Color fgColor = (Color)ht["fg"];
-                Color bgColor = (Color)ht["bg"];
-                if ((Decoration)ht["decoration"] != Decoration.None)
-                {
-                    sb.Append($"[{(Decoration)ht["decoration"]} {fgColor.ToMarkup()} on {bgColor.ToMarkup()}]{(string)ht["String"]}[/]");
-                }
-                else
-                {
-                    sb.Append($"[{fgColor.ToMarkup()} on {bgColor.ToMarkup()}]{(string)ht["String"]}[/]");
-                }
-                _previous.Clear();
-            }
-            if (AsString)
-            {
-                return sb.ToString();
-            }
-            return new Markup(sb.ToString());
-        }
+        //         if (string.IsNullOrEmpty((string)ht["String"]))
+        //         {
+        //             _previous = ht;
+        //             continue;
+        //         }
+        //         if ((Color)ht["fg"] == Color.Default && _previous["fg"] != null)
+        //         {
+        //             ht["fg"] = _previous["fg"];
+        //             _previous["fg"] = null;
+        //         }
+        //         if ((Color)ht["bg"] == Color.Default && _previous["bg"] != null)
+        //         {
+        //             ht["bg"] = _previous["bg"];
+        //             _previous["bg"] = null;
+        //         }
+        //         if ((Decoration)ht["decoration"] == Decoration.None && _previous["decoration"] != null)
+        //         {
+        //             ht["decoration"] = _previous["decoration"];
+        //             _previous["decoration"] = null;
+        //         }
+        //         Color fgColor = (Color)ht["fg"];
+        //         Color bgColor = (Color)ht["bg"];
+        //         if ((Decoration)ht["decoration"] != Decoration.None)
+        //         {
+        //             sb.Append($"[{(Decoration)ht["decoration"]} {fgColor.ToMarkup()} on {bgColor.ToMarkup()}]{(string)ht["String"]}[/]");
+        //         }
+        //         else
+        //         {
+        //             sb.Append($"[{fgColor.ToMarkup()} on {bgColor.ToMarkup()}]{(string)ht["String"]}[/]");
+        //         }
+        //         _previous.Clear();
+        //     }
+        //     if (AsString)
+        //     {
+        //         return sb.ToString();
+        //     }
+        //     return new Markup(sb.ToString());
+        // }
         public static List<VtObject> MultiVT(string text)
         {
             string[] substrings = Escapes.Split(text);
@@ -216,14 +204,16 @@ namespace PwshSpectreConsole
                 {
                     if (!string.IsNullOrEmpty(substring))
                     {
-                        VtObject textFragment = new VtObject
+                        List<IVT> EscapeSequence = Decoder.Parse(currentEscapeSequence.ToString());
+                        VtObject multiVTObject = new VtObject
                         {
-                            CleanIndex = cleanIndex,
+                            Index = cleanIndex,
                             Length = substring.Length,
                             Text = substring,
-                            EscapeSequence = Decoder.Parse(currentEscapeSequence.ToString()),
+                            EscapeSequence = EscapeSequence,
+                            Mapped = Transform.Map(EscapeSequence)
                         };
-                        vtObjects.Add(textFragment);
+                        vtObjects.Add(multiVTObject);
                         cleanIndex += substring.Length;
                         currentEscapeSequence.Clear();
                     }
@@ -231,6 +221,39 @@ namespace PwshSpectreConsole
             }
             return vtObjects;
         }
-    }
+        public static object FromVTToSpectre(string text, bool AsString = false)
+        {
+            List<VtObject> vtObjects = MultiVT(text);
+            StringBuilder sb = new StringBuilder();
+            foreach (VtObject vtObject in vtObjects)
+            {
+                Hashtable ht = vtObject.Mapped;
+                Color fgColor = (Color)ht["fg"];
+                Color bgColor = (Color)ht["bg"];
+                Decoration decoration = (Decoration)ht["decoration"];
+                if (fgColor == Color.Default && bgColor == Color.Default && decoration == Decoration.None)
+                {
+                    sb.Append(vtObject.Text);
+                    // dont inject `e]0m into the string.
+                    continue;
+                }
+                if (decoration != Decoration.None)
+                {
+                    // decoration is set to someting other than None.
+                    sb.Append($"[{decoration} {fgColor.ToMarkup()} on {bgColor.ToMarkup()}]{vtObject.Text}[/]");
+                }
+                else
+                {
+                    // no decoration is set.
+                    sb.Append($"[{fgColor.ToMarkup()} on {bgColor.ToMarkup()}]{vtObject.Text}[/]");
+                }
+            }
+            if (AsString)
+            {
+                return sb.ToString();
+            }
+            return new Markup(sb.ToString());
+        }
 
+    }
 }

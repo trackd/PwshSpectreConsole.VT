@@ -24,11 +24,7 @@ namespace PwshSpectreConsole
         }
         public override string ToString()
         {
-            if (IsForeground)
-            {
-                return $"RGB({Color.R},{Color.G},{Color.B}) Foreground";
-            }
-            return $"RGB({Color.R},{Color.G},{Color.B}) Background";
+            return $"{(IsForeground ? "Foreground" : "Background")} {Color.ToMarkup()}";
         }
     }
     public class Deco : BaseVT
