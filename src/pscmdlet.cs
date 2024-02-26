@@ -127,14 +127,12 @@ namespace PwshSpectreConsole
         {
             if (AsString)
             {
-                object sresult = Transform.FromVTToSpectre(String, true);
-                string _string = sresult as string;
+                var _string = Transform.FromVTToSpectre(String, true);
                 WriteObject(_string);
                 return;
             }
             // for VT decorated strings
-            object mresult = Transform.FromVTToSpectre(String);
-            Markup _markup = mresult as Markup;
+            var _markup = Transform.FromVTToSpectre(String);
             WriteObject(_markup);
             return;
         }
