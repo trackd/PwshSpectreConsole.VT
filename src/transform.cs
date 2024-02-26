@@ -62,7 +62,6 @@ namespace PwshSpectreConsole
             {
                 { "fg", Color.Default },
                 { "bg", Color.Default },
-                { "decoration", Decoration.None },
             };
             foreach (IVT item in input)
             {
@@ -112,9 +111,7 @@ namespace PwshSpectreConsole
                             EscapeSequence = currentEscapeSequence.ToString(),
                             Original = currentEscapeSequence.ToString() + substring + ResetVT
                         };
-
                         textFragments.Add(textFragment);
-
                         cleanIndex += substring.Length;
                         currentEscapeSequence.Clear();
                     }
@@ -230,16 +227,16 @@ namespace PwshSpectreConsole
                 Hashtable ht = vtObject.Mapped;
                 Color fgColor = (Color)ht["fg"];
                 Color bgColor = (Color)ht["bg"];
-                Decoration decoration = (Decoration)ht["decoration"];
+                Decoration? decoration = ht["decoration"] is null ? (Decoration?)null : (Decoration)ht["decoration"];
                 if (fgColor == Color.Default && bgColor == Color.Default && decoration == Decoration.None)
                 {
                     sb.Append(vtObject.Text);
                     // dont inject `e]0m into the string.
                     continue;
                 }
-                if (decoration != Decoration.None)
+                if (decoration != null && decoration != Decoration.None)
                 {
-                    // decoration is set to someting other than None.
+                    // decoration is set to something other than None.
                     sb.Append($"[{decoration} {fgColor.ToMarkup()} on {bgColor.ToMarkup()}]{vtObject.Text}[/]");
                 }
                 else
