@@ -7,11 +7,11 @@ dotnet clean
 
 if ($Type -eq 'Debug') {
     dotnet build
-    Copy-Item '.\bin\Debug\net7.0\PwshSpectreConsole.dll' '..\PwshSpectreConsole\PwshSpectreConsole\packages\PwshSpectreConsole' -Force
+    # Copy-Item '.\bin\Debug\net6.0\PwshSpectreConsole.dll' '..\PwshSpectreConsole\PwshSpectreConsole\packages\PwshSpectreConsole' -Force
 }
 else {
-    dotnet publish -c Release -f net7.0
-    Copy-Item '.\bin\Release\net7.0\PwshSpectreConsole.dll' '..\PwshSpectreConsole\PwshSpectreConsole\packages\PwshSpectreConsole' -Force
+    dotnet publish -c Release -f net6.0
+    # Copy-Item '.\bin\Release\net6.0\PwshSpectreConsole.dll' '..\PwshSpectreConsole\PwshSpectreConsole\packages\PwshSpectreConsole' -Force
 }
 
 Pop-Location

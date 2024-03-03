@@ -6,7 +6,7 @@ namespace PwshSpectreConsole
 {
     internal class Decoder
     {
-        private static (string slice, int placement) GetNextSlice(ref ReadOnlySpan<char> inputSpan)
+        private static (string? slice, int placement) GetNextSlice(ref ReadOnlySpan<char> inputSpan)
         {
             var escIndex = inputSpan.IndexOf('\u001b');
             if (escIndex == -1)
@@ -68,7 +68,7 @@ namespace PwshSpectreConsole
                 Position = _position
             };
         }
-        private static Deco NewDecoVT(int decorationNumber, int _position)
+        private static Deco? NewDecoVT(int decorationNumber, int _position)
         {
             if (DecorationDictionary.TryGetValue(decorationNumber, out Decoration decoration))
             {
@@ -83,7 +83,7 @@ namespace PwshSpectreConsole
                 return null;
             }
         }
-        private static IVT NewVT(int firstCode, byte[] codeParts, int _position)
+        private static IVT? NewVT(int firstCode, byte[] codeParts, int _position)
         {
             if (firstCode >= 30 && firstCode <= 37 || firstCode >= 40 && firstCode <= 47 || firstCode >= 90 && firstCode <= 97 || firstCode >= 100 && firstCode <= 107)
             {
@@ -135,7 +135,7 @@ namespace PwshSpectreConsole
                     try
                     {
                         int firstCode = codeParts[0];
-                        IVT _vtCode = NewVT(firstCode, codeParts, placement);
+                        IVT? _vtCode = NewVT(firstCode, codeParts, placement);
                         if (_vtCode != null)
                         {
                             results.Add(_vtCode);
