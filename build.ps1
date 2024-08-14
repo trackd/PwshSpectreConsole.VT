@@ -1,5 +1,6 @@
 param(
-    $Type = 'Publish'
+    $Type = 'Publish',
+    $version = '6.0'
 )
 Push-Location $PSScriptRoot
 Remove-Item '..\PwshSpectreConsole\PwshSpectreConsole\packages\PwshSpectreConsole\PwshSpectreConsole.dll' -Force -ErrorAction Ignore
@@ -10,8 +11,8 @@ if ($Type -eq 'Debug') {
     # Copy-Item '.\bin\Debug\net6.0\PwshSpectreConsole.dll' '..\PwshSpectreConsole\PwshSpectreConsole\packages\PwshSpectreConsole' -Force
 }
 else {
-    dotnet publish -c Release -f net6.0
-    # Copy-Item '.\bin\Release\net6.0\PwshSpectreConsole.dll' '..\PwshSpectreConsole\PwshSpectreConsole\packages\PwshSpectreConsole' -Force
+    dotnet publish -c Release -f "net$($version)"
+    Copy-Item ".\bin\Release\net$($version)\PwshSpectreConsole.dll" '..\PwshSpectreConsole\PwshSpectreConsole\packages\PwshSpectreConsole' -Force
 }
 
 Pop-Location

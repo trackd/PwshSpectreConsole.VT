@@ -1,35 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 using Spectre.Console;
 
 namespace PwshSpectreConsole
 {
-    internal class Decoder
+    public class Decoder
     {
-        private static (string? slice, int placement) GetNextSlice(ref ReadOnlySpan<char> inputSpan)
-        {
-            var escIndex = inputSpan.IndexOf('\u001b');
-            if (escIndex == -1)
-            {
-                return (null, 0);
-            }
-            // Skip the '[' character after ESC
-            var sliceStart = escIndex + 2;
-            if (sliceStart >= inputSpan.Length)
-            {
-                return (null, 0);
-            }
-            var slice = inputSpan.Slice(sliceStart);
-            var endIndex = slice.IndexOf('m');
-            if (endIndex == -1)
-            {
-                return (null, 0);
-            }
-            var vtCode = slice.Slice(0, endIndex).ToString();
-            int placement = sliceStart + endIndex - vtCode.Length;
-            inputSpan = inputSpan.Slice(placement);
-            return (vtCode, placement);
-        }
         private static VtCode New4BitVT(int firstCode, int _position)
         {
             Color color = new Color();
@@ -40,7 +17,7 @@ namespace PwshSpectreConsole
             return new VtCode
             {
                 Color = color,
-                Type = "4bit",
+                Type = DecoratedType.Color4Bit,
                 IsForeground = (firstCode >= 30 && firstCode <= 37) || (firstCode >= 90 && firstCode <= 97),
                 Position = _position
             };
@@ -51,7 +28,7 @@ namespace PwshSpectreConsole
             return new VtCode
             {
                 Color = color,
-                Type = "8bit",
+                Type = DecoratedType.Color8Bit,
                 IsForeground = IsForeground,
                 Position = _position
             };
@@ -63,7 +40,7 @@ namespace PwshSpectreConsole
             return new VtCode
             {
                 Color = color,
-                Type = "24bit",
+                Type = DecoratedType.Color24Bit,
                 IsForeground = IsForeground,
                 Position = _position
             };
@@ -107,49 +84,97 @@ namespace PwshSpectreConsole
             }
             return null;
         }
-        internal static List<IVT> Parse(string input)
+        public static DecoratedString Parse(string input)
         {
-            ReadOnlySpan<char> inputSpan = input.AsSpan();
-            List<IVT> results = new List<IVT>();
-
-            while (!inputSpan.IsEmpty)
+            try
             {
-                var (slice, placement) = GetNextSlice(inputSpan: ref inputSpan);
-                if (slice == null)
+                ReadOnlySpan<char> inputSpan = input.AsSpan();
+                List<IVT> vtCodes = new List<IVT>();
+                StringBuilder textBuilder = new StringBuilder();
+                while (!inputSpan.IsEmpty)
                 {
-                    break;
-                }
-                string[] stringParts = slice.Split(';');
-                byte[] codeParts = new byte[stringParts.Length];
-
-                for (int i = 0; i < stringParts.Length; i++)
-                {
-                    if (!byte.TryParse(stringParts[i], out codeParts[i]))
+                    GetNextSlice(ref inputSpan, out ReadOnlySpan<char> vtCode, out int _position);
+                    textBuilder.Append(inputSpan.Slice(0, _position).ToString()); // Append text before VT code
+                    if (vtCode == null)
                     {
-                        // ignore failure
+                        break;
                     }
-                }
-
-                if (codeParts.Length > 0)
-                {
-                    try
+                    inputSpan = inputSpan.Slice(_position); // Adjust slicing here
+                    ReadOnlySpan<char> sliceSpan = vtCode;
+                    List<byte> codeParts = new List<byte>();
+                    while (sliceSpan.Length > 0)
                     {
-                        int firstCode = codeParts[0];
-                        IVT? _vtCode = NewVT(firstCode, codeParts, placement);
+                        int separatorIndex = sliceSpan.IndexOf(';');
+                        if (separatorIndex == -1)
+                        {
+                            separatorIndex = sliceSpan.Length;
+                        }
+                        ReadOnlySpan<char> partSpan = sliceSpan.Slice(0, separatorIndex);
+                        if (byte.TryParse(partSpan, out byte code))
+                        {
+                            codeParts.Add(code);
+                        }
+                        sliceSpan = sliceSpan.Slice(Math.Min(separatorIndex + 1, sliceSpan.Length));
+                    }
+                    if (codeParts.Count > 0)
+                    {
+                        byte firstCode = codeParts[0];
+                        IVT? _vtCode = NewVT(firstCode, codeParts.ToArray(), _position);
                         if (_vtCode != null)
                         {
-                            results.Add(_vtCode);
+                            vtCodes.Add(_vtCode);
                         }
                     }
-                    catch (FormatException ex)
-                    {
-                        // Ignore
-                        Console.WriteLine($"Failed to map IVT object: {ex.Message}");
-                        throw;
-                    }
+                    inputSpan = inputSpan.Slice(vtCode.Length + 3); // Skip over the VT code and the 'm' character
                 }
+                string text = textBuilder.ToString();
+                return new DecoratedString
+                {
+                    IsDecorated = vtCodes.Count > 0,
+                    String = input,
+                    Text = text,
+                    StringLength = input.Length,
+                    TextLength = text.Length,
+                    VtCodes = vtCodes
+                };
             }
-            return results;
+            catch (Exception ex)
+            {
+                // Add logging or output error details for debugging
+                Console.WriteLine($"Error occurred during parsing: {ex.Message}");
+                throw; // Re-throw the exception to propagate it further
+            }
+        }
+        private static void GetNextSlice(ref ReadOnlySpan<char> inputSpan, out ReadOnlySpan<char> vtCode, out int _position)
+        {
+            try
+            {
+                var escIndex = inputSpan.IndexOf('\u001b');
+                if (escIndex == -1 || escIndex + 2 >= inputSpan.Length)
+                {
+                    vtCode = null;
+                    _position = escIndex == -1 ? inputSpan.Length : escIndex;
+                    return;
+                }
+                // Skip the '[' character after ESC
+                var sliceStart = escIndex + 2;
+                var endIndex = inputSpan.Slice(sliceStart).IndexOf('m');
+                if (endIndex == -1 || sliceStart + endIndex >= inputSpan.Length)
+                {
+                    vtCode = null;
+                    _position = sliceStart - 2; // Return position of '\u001b'
+                    return;
+                }
+                vtCode = inputSpan.Slice(sliceStart, endIndex);
+                _position = escIndex; // Return position of '\u001b'
+                inputSpan = inputSpan.Slice(_position + endIndex + 3); // Include the 'm' character
+            }
+            catch (Exception ex)
+            {
+                // Add logging or output error details for debugging
+                Console.WriteLine($"Error occurred during VT code extraction: {ex.Message}");
+                throw; // Re-throw the exception to propagate it further
+            }
         }
     }
 }

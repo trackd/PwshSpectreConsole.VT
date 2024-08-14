@@ -4,7 +4,8 @@ function Get-SpectreGif {
         [string] $ImagePath,
         [int] $width,
         [int] $LoopCount = 0,
-        [Switch] $alt
+        [Switch] $alt,
+        [switch] $third
     )
     $ImagePath = $PSCmdlet.GetUnresolvedProviderPathFromPSPath($ImagePath)
     $imagePathResolved = Resolve-Path $ImagePath
@@ -15,9 +16,15 @@ function Get-SpectreGif {
     $player = [PwshSpectreConsole.GifPlayer]::new()
     try {
         if ($alt) {
-            $task = $player.PlayAlt($ImagePath, $width, $LoopCount, $cts.Token)
+            $PixelWidth = $width / 2
+            $task = $player.PlayAlt($ImagePath, $PixelWidth, $LoopCount, $cts.Token)
+        }
+        elseif ($third) {
+            $PixelWidth = $width / 2
+            $task = $player.Play3($ImagePath, $PixelWidth, $LoopCount, $cts.Token)
         }
         else {
+            # $task = $player.Play($ImagePath, $LoopCount, $cts.Token)
             $task = $player.Play($ImagePath, $width, $LoopCount, $cts.Token)
         }
         while (-not $task.AsyncWaitHandle.WaitOne(200)) {
